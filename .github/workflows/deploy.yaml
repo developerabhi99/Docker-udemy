@@ -1,20 +1,29 @@
 name: Deploy master
+
 on:
   push:
     branches:
-    - main
+      - main
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
-      - run: docker build -t react-test -f Dockerfile.dev .
-      - run: docker run -e CI=true react-test npm test
+      - name: Checkout code
+        uses: actions/checkout@v4
 
+      # Run tests using dev Dockerfile (this is fine)
+      - name: Run tests
+        run: |
+          docker build -t react-test -f Dockerfile.dev .
+          docker run -e CI=true react-test npm test
+
+      # Create deployment zip (cleaned)
       - name: Generate deployment package
-        run: zip -r deploy.zip . -x '*.git*'
+        run: zip -r deploy.zip . -x '*.git*' 'node_modules/*'
 
+      # Deploy to Elastic Beanstalk
       - name: Deploy to EB
         uses: einaregilsson/beanstalk-deploy@v22
         with:
@@ -26,5 +35,3 @@ jobs:
           version_label: ${{ github.sha }}
           region: ap-south-1
           deployment_package: deploy.zip
-
-          
